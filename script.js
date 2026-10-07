@@ -107,7 +107,44 @@ async function fileData(input,max){const f=input?.files?.[0];if(!f)return '';if(
 $('#friendsBtn').onclick=()=>{$('#friendModal').classList.remove('hidden');$('#friendForm').classList.add('hidden')};
 $('#closeFriendModal').onclick=()=>$('#friendModal').classList.add('hidden');
 $$('#friendTypePicker button').forEach(b=>b.onclick=()=>selectFriendType(b.dataset.type));
-$('#friendForm').onsubmit=async e=>{e.preventDefault();if(location.protocol==='file:'){alert('Friends submissions need ENTRY to be hosted online first.');return}let d=Object.fromEntries(new FormData(e.target));d.type=friendType;try{if(friendType==='image'){d.image=await fileData(e.target.imageFile,5*1024*1024);delete d.imageFile}if(friendType==='video'){d.video=await fileData(e.target.videoFile,12*1024*1024);delete d.videoFile}const r=await fetch('/api/submissions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});if(!r.ok)throw new Error();alert('Sent ♡ It is waiting for approval.');e.target.reset();$('#friendModal').classList.add('hidden')}catch(err){alert(err.message==='file-too-large'?'That file is too large.':'Could not send the entry yet.')}};
+$('#friendForm').onsubmit=async e=>{
+  e.preventDefault();
+
+  let d=Object.fromEntries(new FormData(e.target));
+  d.type=friendType;
+
+  try{
+    if(friendType==='image'){
+      d.image=await fileData(e.target.imageFile,5*1024*1024);
+      delete d.imageFile;
+    }
+
+    if(friendType==='video'){
+      d.video=await fileData(e.target.videoFile,12*1024*1024);
+      delete d.videoFile;
+    }
+
+    const {error}=await db
+      .from("submissions")
+      .insert({
+        type:d.type,
+        content:JSON.stringify(d),
+        status:"pending"
+      });
+
+    if(error) throw error;
+
+    alert('Sent ♡ It is waiting for approval.');
+    e.target.reset();
+    $('#friendModal').classList.add('hidden');
+
+  }catch(err){
+    console.error("Submission failed:",err);
+    alert(err.message==='file-too-large'
+      ?'That file is too large.'
+      :'Could not send the entry yet.');
+  }
+};
 async function openInbox(){if(location.protocol==='file:'){alert('The inbox is available on the hosted ENTRY site.');return}let key=sessionStorage.getItem('entryAdminKey')||prompt('ADMIN KEY');if(!key)return;let r=await fetch('/api/inbox',{headers:{'x-admin-key':key}});if(r.status===401){sessionStorage.removeItem('entryAdminKey');alert('Wrong admin key.');return}sessionStorage.setItem('entryAdminKey',key);let d=await r.json();$('#inboxContent').innerHTML=(d.submissions||[]).length?d.submissions.map(x=>`<div class="paper" style="margin-bottom:16px"><p class="eyebrow">${esc(x.type)} · ${esc(x.date||'')}</p><h2>${esc(x.title||x.name||'Untitled')}</h2><p>${esc(x.body||x.note||x.artist||x.youtube||'')}</p><p class="hint">FROM: ${esc(x.name||'anonymous')} · STATUS: ${esc(x.status)}</p>${x.status==='pending'?`<button class="save-btn" data-approve="${x.id}">KEEP</button> <button class="plain-btn" data-reject="${x.id}">REJECT</button>`:''}</div>`).join(''):'<p class="hint">Nothing waiting.</p>';$('#inboxModal').classList.remove('hidden')}
 $('#inboxBtn').onclick=openInbox;$('#closeInboxModal').onclick=()=>$('#inboxModal').classList.add('hidden');
 $('#inboxContent').onclick=async e=>{const id=e.target.dataset.approve||e.target.dataset.reject;if(!id)return;const action=e.target.dataset.approve?'approve':'reject',key=sessionStorage.getItem('entryAdminKey');const r=await fetch('/api/submissions/'+id,{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':key},body:JSON.stringify({action})});if(r.ok){await syncApproved();openInbox()}};
