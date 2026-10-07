@@ -1,3 +1,10 @@
+const SUPABASE_URL = "https://vdrmoofaqnqhdpxbljif.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ntiUF2cHpgcKpWthmrzO-A_gANC6TbG";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const TYPES={music:["♫","MUSIC"],letter:["✉","LETTER"],poetry:["❝","POETRY"],fragment:["☁","RANDOM TEXT"],image:["▧","IMAGE"],video:["▶","VIDEO"],place:["⌖","PLACE"]};
 const normalizeEntry=x=>{let e={...x};if(e.type==="sound")e.type="video";if(e.type==="object"){e.type="fragment";e.body=[e.title,e.note].filter(Boolean).join("\n");delete e.title;delete e.note}e.id=String(e.id||crypto.randomUUID());return e};
