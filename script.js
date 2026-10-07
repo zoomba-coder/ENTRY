@@ -145,6 +145,121 @@ $('#friendForm').onsubmit=async e=>{
       :'Could not send the entry yet.');
   }
 };
-async function openInbox(){if(location.protocol==='file:'){alert('The inbox is available on the hosted ENTRY site.');return}let key=sessionStorage.getItem('entryAdminKey')||prompt('ADMIN KEY');if(!key)return;let r=await fetch('/api/inbox',{headers:{'x-admin-key':key}});if(r.status===401){sessionStorage.removeItem('entryAdminKey');alert('Wrong admin key.');return}sessionStorage.setItem('entryAdminKey',key);let d=await r.json();$('#inboxContent').innerHTML=(d.submissions||[]).length?d.submissions.map(x=>`<div class="paper" style="margin-bottom:16px"><p class="eyebrow">${esc(x.type)} · ${esc(x.date||'')}</p><h2>${esc(x.title||x.name||'Untitled')}</h2><p>${esc(x.body||x.note||x.artist||x.youtube||'')}</p><p class="hint">FROM: ${esc(x.name||'anonymous')} · STATUS: ${esc(x.status)}</p>${x.status==='pending'?`<button class="save-btn" data-approve="${x.id}">KEEP</button> <button class="plain-btn" data-reject="${x.id}">REJECT</button>`:''}</div>`).join(''):'<p class="hint">Nothing waiting.</p>';$('#inboxModal').classList.remove('hidden')}
-$('#inboxBtn').onclick=openInbox;$('#closeInboxModal').onclick=()=>$('#inboxModal').classList.add('hidden');
-$('#inboxContent').onclick=async e=>{const id=e.target.dataset.approve||e.target.dataset.reject;if(!id)return;const action=e.target.dataset.approve?'approve':'reject',key=sessionStorage.getItem('entryAdminKey');const r=await fetch('/api/submissions/'+id,{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':key},body:JSON.stringify({action})});if(r.ok){await syncApproved();openInbox()}};
+async function openInbox(){
+  try{
+    let {data:{session}}=await db.auth.getSession();
+
+    if(!session){
+      const email=prompt('Admin email');
+      if(!email)return;
+
+      const password=prompt('Admin password');
+      if(!password)return;
+
+      const {error}=await db.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if(error){
+        alert('Could not sign in.');
+        return;
+      }
+    }
+
+    const {data,error}=await db
+      .from('submissions')
+      .select('*')
+      .order('created_at',{ascending:false});
+
+    if(error)throw error;
+
+    const submissions=(data||[]).map(row=>{
+      let content={};
+
+      try{
+        content=JSON.parse(row.content||'{}');
+      }catch(e){
+        content={body:row.content||''};
+      }
+
+      return {
+        ...content,
+        id:row.id,
+        type:row.type,
+        status:row.status,
+        created_at:row.created_at
+      };
+    });
+
+    $('#inboxContent').innerHTML=submissions.length
+      ? submissions.map(x=>`
+        <div class="paper" style="margin-bottom:16px">
+          <p class="eyebrow">${esc(x.type)} · ${esc(x.created_at||'')}</p>
+          <h2>${esc(x.title||x.name||'Untitled')}</h2>
+          <p>${esc(x.body||x.note||x.artist||x.youtube||'')}</p>
+          <p class="hint">
+            FROM: ${esc(x.name||'anonymous')} · STATUS: ${esc(x.status)}
+          </p>
+
+          ${x.status==='pending'
+            ? `<button class="save-btn" data-approve="${x.id}">KEEP</button>
+               <button class="plain-btn" data-reject="${x.id}">REJECT</button>`
+            : ''}
+        </div>
+      `).join('')
+      : '<p class="hint">Nothing here.</p>';
+
+    $('#inboxModal').classList.remove('hidden');
+
+  }catch(err){
+    console.error('Inbox failed:',err);
+    alert('Could not load the inbox.');
+  }
+}
+
+$('#inboxBtn').onclick=openInbox;
+$('#closeInboxModal').onclick=()=>$('#inboxModal').classList.add('hidden');
+
+$('#inboxContent').onclick=async e=>{
+  const id=e.target.dataset.approve||e.target.dataset.reject;
+  if(!id)return;
+
+  const action=e.target.dataset.approve?'approve':'reject';
+
+  try{
+    if(action==='approve'){
+      const {data:submission,error:fetchError}=await db
+        .from('submissions')
+        .select('*')
+        .eq('id',id)
+        .single();
+
+      if(fetchError)throw fetchError;
+
+      const {error:entryError}=await db
+        .from('entries')
+        .insert({
+          type:submission.type,
+          content:submission.content,
+          entry_id:String(submission.id)
+        });
+
+      if(entryError)throw entryError;
+    }
+
+    const {error:updateError}=await db
+      .from('submissions')
+      .update({status:action==='approve'?'approved':'rejected'})
+      .eq('id',id);
+
+    if(updateError)throw updateError;
+
+    await syncApproved();
+    openInbox();
+
+  }catch(err){
+    console.error('Inbox action failed:',err);
+    alert('Could not process that submission.');
+  }
+};
