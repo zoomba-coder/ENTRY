@@ -26,7 +26,45 @@ if(e.type==="place")c=`<div class="place-card"><div class="map-placeholder">⌖<
 return `<article class="entry" data-id="${e.id}"><div class="entry-meta"><span>${s} ${l}</span><time>${dateText(e.date)}</time></div><div class="entry-actions"><button data-edit="${e.id}" type="button">EDIT</button><button data-delete="${e.id}" type="button">DELETE</button></div>${c}</article>`}
 function render(){let a=entries.filter(e=>(filter==="all"||e.type===filter)&&(!dateFilter||e.date===dateFilter));$("#entries").innerHTML=a.length?a.map(card).join(""):`<div class="empty"><span>∅</span><h2>Nothing here yet.</h2><p>This part of the archive is waiting for something to happen.</p></div>`;$("#count").textContent=String(entries.length).padStart(3,"0")}
 render();
-async function syncApproved(){if(location.protocol==='file:')return;try{const r=await fetch('/api/approved');if(!r.ok)return;const d=await r.json();const localIds=new Set(entries.map(x=>x.id));const approved=(d.entries||[]).filter(x=>!localIds.has(x.id));if(approved.length){entries=[...entries,...approved];render()}}catch(e){}}
+async function syncApproved(){
+  try{
+    const { data, error } = await db
+      .from("entries")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if(error) throw error;
+
+    const localIds = new Set(entries.map(x => x.id));
+
+    const approved = (data || [])
+      .map(row => {
+        let content = {};
+
+        try{
+          content = JSON.parse(row.content || "{}");
+        }catch(e){
+          content = { body: row.content || "" };
+        }
+
+        return normalizeEntry({
+          ...content,
+          id: row.entry_id || String(row.id),
+          type: row.type,
+          created_at: row.created_at
+        });
+      })
+      .filter(x => !localIds.has(x.id));
+
+    if(approved.length){
+      entries = [...entries, ...approved];
+      render();
+    }
+  }catch(e){
+    console.error("Supabase sync failed:", e);
+  }
+}
+
 syncApproved();
 $$('.filter').forEach(b=>b.onclick=()=>{$$('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');filter=b.dataset.filter;render()});
 $("#newEntry").onclick=()=>{editingId=null;$("#modal").classList.remove("hidden");$("#entryForm").classList.add("hidden")};
