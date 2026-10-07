@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ENTRY ฅʕ•̫͡•ʔฅ — personal archive</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+<div class="brand"><b>ENTRY</b><span>PERSONAL ARCHIVE</span></div>
+<nav id="filters">
+<button class="filter active" data-filter="all">ALL ENTRIES</button>
+<button class="filter" data-filter="music">♫ MUSIC</button><button class="filter" data-filter="letter">✉ LETTER</button>
+<button class="filter" data-filter="poetry">❝ POETRY</button><button class="filter" data-filter="image">▧ IMAGE</button>
+<button class="filter" data-filter="fragment">☁ RANDOM TEXT</button><button class="filter" data-filter="video">▶ VIDEO</button>
+<button class="filter" data-filter="place">⌖ PLACE</button>
+</nav>
+<div class="sidebar-bottom">
+<button class="new-btn" id="newEntry">＋ NEW ENTRY</button>
+<button class="plain-btn" id="randomEntry">OPEN SOMETHING ↗</button>
+<button class="plain-btn" id="exportBtn">EXPORT BACKUP ↓</button><button class="plain-btn" id="importBtn">IMPORT BACKUP ↑</button><button class="plain-btn" id="friendsBtn">LEAVE SOMETHING ♡</button><button class="plain-btn" id="inboxBtn">INBOX</button><input id="backupFile" type="file" accept=".json,application/json" hidden>
+</div>
+</aside>
+<main>
+<header class="topbar"><div><p class="eyebrow">PRIVATE RECORD / <span id="count">000</span> ENTRIES</p><h1>your day collection</h1></div><div class="date-tools"><time id="today"></time><input id="dateSearch" type="date" aria-label="Search by date"><button id="clearDate" type="button">×</button></div></header>
+<section class="intro"><p>because remembering everything is hard and this is easier.</p></section>
+<section class="entries" id="entries"></section>
+<footer><span>END OF CURRENT ARCHIVE</span><span>ENTRY / 2026</span></footer>
+</main>
+
+<div class="modal hidden" id="modal"><div class="modal-box">
+<button class="close" id="closeModal">×</button><p class="eyebrow">CREATE / NEW ENTRY</p><h2>What are you keeping?</h2>
+<div class="type-picker">
+<button data-type="music">♫<span>MUSIC</span></button><button data-type="letter">✉<span>LETTER</span></button>
+<button data-type="poetry">❝<span>POETRY</span></button><button data-type="fragment">☁<span>RANDOM TEXT</span></button>
+<button data-type="image">▧<span>IMAGE</span></button><button data-type="video">▶<span>VIDEO</span></button>
+<button data-type="place">⌖<span>PLACE</span></button>
+</div>
+<form id="entryForm" class="hidden"><div id="dynamicFields"></div><button class="save-btn">SAVE ENTRY →</button></form>
+</div></div>
+
+
+<div class="modal hidden" id="friendModal"><div class="modal-box">
+<button class="close" id="closeFriendModal">×</button><p class="eyebrow">FROM A FRIEND</p><h2>Leave something.</h2>
+<p class="hint">Your entry will be sent to the archive owner for approval. You cannot edit or delete it afterwards.</p>
+<div class="type-picker" id="friendTypePicker">
+<button data-type="music">♫<span>MUSIC</span></button><button data-type="letter">✉<span>LETTER</span></button><button data-type="poetry">❝<span>POETRY</span></button><button data-type="fragment">☁<span>RANDOM TEXT</span></button><button data-type="image">▧<span>IMAGE</span></button><button data-type="video">▶<span>VIDEO</span></button><button data-type="place">⌖<span>PLACE</span></button>
+</div><form id="friendForm" class="hidden"><div id="friendFields"></div><button class="save-btn">SEND TO ENTRY →</button></form></div></div>
+
+<div class="modal hidden" id="inboxModal"><div class="modal-box">
+<button class="close" id="closeInboxModal">×</button><p class="eyebrow">PRIVATE / INBOX</p><h2>Friend submissions.</h2><div id="inboxContent"><p class="hint">Loading…</p></div></div></div>
+<script src="script.js"></script>
+</body></html>
