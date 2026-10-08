@@ -50,7 +50,7 @@ async function syncApproved(){
         return normalizeEntry({
           ...content,
           id: row.entry_id || String(row.id),
-          type: row.type,
+          type: row.type || content.type,
           created_at: row.created_at
         });
       })
