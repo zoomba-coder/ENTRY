@@ -238,13 +238,12 @@ $('#inboxContent').onclick=async e=>{
       if(fetchError)throw fetchError;
 
       const {error:entryError}=await db
-        .from('entries')
-        .insert({
-          type:submission.type,
-          content:submission.content,
-          entry_id:String(submission.id)
-        });
-
+      .from('entries')
+      .insert({
+      title:submission.title||submission.name||'Untitled',
+      content:submission.content,
+      entry_id:String(submission.id)
+      });
       if(entryError)throw entryError;
     }
 
