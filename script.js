@@ -5,6 +5,18 @@ const db = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY
 );
+let currentUser = null;
+
+async function loadSession(){
+  const {data:{session}} = await db.auth.getSession();
+  currentUser = session?.user || null;
+}
+
+db.auth.onAuthStateChange((_event, session)=>{
+  currentUser = session?.user || null;
+});
+
+loadSession();
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const TYPES={music:["♫","MUSIC"],letter:["✉","LETTER"],poetry:["❝","POETRY"],fragment:["☁","RANDOM TEXT"],image:["▧","IMAGE"],video:["▶","VIDEO"],place:["⌖","PLACE"]};
 const normalizeEntry=x=>{let e={...x};if(e.type==="sound")e.type="video";if(e.type==="object"){e.type="fragment";e.body=[e.title,e.note].filter(Boolean).join("\n");delete e.title;delete e.note}e.id=String(e.id||crypto.randomUUID());return e};
