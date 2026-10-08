@@ -28,40 +28,42 @@ function render(){let a=entries.filter(e=>(filter==="all"||e.type===filter)&&(!d
 render();
 async function syncApproved(){
   try{
-    const { data, error } = await db
-      .from("entries")
-      .select("*")
-      .order("created_at", { ascending: true });
+    const {data,error}=await db
+      .from('entries')
+      .select('*')
+      .order('created_at',{ascending:true});
 
-    if(error) throw error;
+    if(error)throw error;
 
-    const localIds = new Set(entries.map(x => x.id));
+    const localIds=new Set(entries.map(x=>x.id));
 
-    const approved = (data || [])
-      .map(row => {
-        let content = {};
+    const approved=(data||[])
+      .map(row=>{
+        let content={};
 
         try{
-          content = JSON.parse(row.content || "{}");
+          content=JSON.parse(row.content||'{}');
         }catch(e){
-          content = { body: row.content || "" };
+          content={body:row.content||''};
         }
 
         return normalizeEntry({
           ...content,
-          id: row.entry_id || String(row.id),
-          type: row.type || content.type,
-          created_at: row.created_at
+          id:row.entry_id||String(row.id),
+          title:row.title||content.title,
+          type:content.type||'text',
+          created_at:row.created_at
         });
       })
-      .filter(x => !localIds.has(x.id));
+      .filter(x=>!localIds.has(x.id));
 
     if(approved.length){
-      entries = [...entries, ...approved];
+      entries=[...entries,...approved];
       render();
     }
+
   }catch(e){
-    console.error("Supabase sync failed:", e);
+    console.error('Supabase sync failed:',e);
   }
 }
 
